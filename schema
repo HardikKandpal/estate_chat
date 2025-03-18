@@ -1,0 +1,1742 @@
+# -*- coding: utf-8 -*-
+"""Skill to analyze WA data
+Reference document having template and labels/key values to analyze and extract data from messages (source : WA)
+"""
+
+
+#...Template or format to get structured data from real estate messages (whatsapp)
+#...below XXX is number of message starting from 001 and so on
+
+message_no_XXX_structured_format : {
+
+#...
+basic_message_info: {
+
+}
+
+#...
+contact_info: {
+
+}
+
+#...if message body/ content consist of multiple property listings index them under property_listing_A, property_listing_B and so on.
+#...if message body/ content consist of multiple real estate inquiries index them under real_estate_inquiry_A, real_estate_inquiry_B and so on.
+structured_message_content: {
+
+#...property listing A
+{
+
+
+}
+
+#...property listing B
+{
+
+}
+
+#...real estate inquiry A
+{
+
+}
+
+#...real estate inquiry B
+{
+
+}
+}
+}
+
+"""Keys/ lables that are to be used to extract data from the messages to create a structured output are nested below in following:
+
+"basic_message_info",
+
+"contact_info",
+"""
+
+# lables_Keys_for_data_extraction =  {
+
+#...in basic_message_info ONLY populate lables/keywords mentioned below
+"basic_message_info": {
+        "id": {  # Unique identifier for the message
+            "description": "A UUID or other unique string for tracking and reference"
+        },
+        "date": {  # Date the message was received
+            "description": "Date in YYYY-MM-DD format"
+        },
+        "time": {  # Time the message was received
+            "description": "Time in HH:MM format"
+        },
+        "source_number": {  # Phone number or contact information of the sender
+            "description": "Phone number or other contact details for the sender"
+        },
+        "file/chat_name": {  # Name of the file or chat conversation
+            "description": "Name of the file (e.g., text file, image) or chat name"
+        }
+    }, #...for basic_message_info populate only those fields for which data is avaliable
+
+# ...in contact_info ONLY populate lables/keywords mentioned below
+    "contact_info": {
+        "contact_name": {  # Name of the primary contact person
+            "description": "Full name of the individual to contact"
+        },
+        "contact_number": {  # Phone number of the primary contact person
+            "description": "Phone number for reaching the contact person"
+        },
+        "agency_name": {  # Name of the real estate agency (if applicable)
+            "description": "Name of the agency representing the property or inquiry"
+        }
+    }, #...for contact_info populate only those fields for which data is avaliable
+
+#...keywords to extract property features of residential properties like Flat/Apartments, Bungalows/ Villas, Penthouse, Row house, Cottages.
+#...keywords can also be used to extract user preferences with regards to property features of residential properties like Flat/Apartments, Bungalows/ Villas, Penthouse, Row house, Cottages.
+    "residential_property_features": {
+        "type": {  # Type of residential property
+            "options": ["Flat/Apartments", "Bungalows/ Villas", "Penthouse", "Row house", "Cottages"]
+        },       {
+        "configuration": {  # Type of property based on number of rooms
+            "options": ["1RK", "1BHK", "2BHK", "3BHK", "4BHK", "5BHK", "6BHK"]
+        },
+        "area": {  # Area of the property in square feet
+            "value": "...",
+            "description": "Specify carpet or built-up area"
+        },
+        "bathrooms": {  # Number of bathrooms
+            "value": "..."
+        },
+        "floor": {  # Floor number of the property (ground, 1, 2, 3 ect...)
+            "value": "..."
+        },
+        "total_floors": {  # Total number of floors in the building, villa, bungalow
+            "value": "..."
+        },
+        "furnishing_status": {  # Furnishing status of the property
+            "options": ["Unfurnished/Empty", "Semi-furnished", "Fully-furnished"]
+        },
+        "facing": {  # Direction the property faces
+            "options": ["East", "West", "North", "South"]
+        },
+        "view": {  # Type of view from the property
+            "options": ["Garden facing", "Sea Facing", "Road Facing", "pool facing", "Other"]
+        },
+        "ownership": {  # Type of property ownership
+            "options": ["Freehold", "Leasehold"]
+        },
+        "possession": {  # Possession status of the property
+            "options": ["Ready to Move", "Date of Possession"]
+        },
+        "maintenance_charges": {  # Monthly maintenance charges (if applicable)
+            "value": "..."
+        }
+    }
+}
+
+#...populate fields in "property_listing" using the following dictionary to extract keywords from messages
+avaliable_residential_property_features = {
+    # Core property details
+    "avaliable_residential_property_type": {
+        "description": "Type of residential property",
+        "options": [
+            "Flat/Apartments",
+            "Bungalows/Villas",
+            "Penthouse",
+            "Row house",
+            "Cottages",
+            "Others"  # For capturing other property types not listed
+        ],
+        "required": True  # Enforce mandatory field for clarity
+    },
+    "configuration": {
+        "description": "Number of rooms and type of configuration",
+        "options": [
+            "1RK",
+            "1BHK",
+            "2BHK",
+            "3BHK",
+            "4BHK",
+            "5BHK",
+            "6BHK",
+            "Studio",
+            "Duplex",
+            "Other"  # For capturing other configurations not listed
+        ],
+        "required": True
+    },
+    "area": {
+        "description": "Area of the property",
+        "value": {
+            "type": "float",  # Ensure numerical value
+            "required": True
+        },
+        "unit": {
+            "options": ["Sq Ft", "Sq M", "Marla", "Guntha", "Acre"],
+            "required": True
+        }
+    },
+    "bathrooms": {
+        "description": "Number of bathrooms",
+        "value": {
+            "type": "integer",  # Ensure integer value
+            "required": True
+        }
+    },
+
+    # Building and location details
+    "floor": {
+        "description": "Floor number of the property",
+        "value": {
+            "type": "integer",
+            "nullable": True  # Allow flexibility for ground floor or unknown cases
+        }
+    },
+    "total_floors": {
+        "description": "Total number of floors in the building (only applicable for Flats/Apartments, Row houses)",
+        "value": {
+            "type": "integer",
+            "nullable": True  # Allow flexibility for unknown cases
+        }
+    },
+    "facing": {
+        "description": "Direction the property faces",
+        "options": ["East", "West", "North", "South", "Northeast", "Northwest", "Southeast", "Southwest"],
+        "nullable": True  # Allow flexibility for cases where facing info is unavailable
+    },
+    "view": {
+        "description": "Type of view from the property",
+        "options": [
+            "Garden facing",
+            "Sea Facing",
+            "Road Facing",
+            "Pool facing",
+            "Other",
+            "No view"  # Include "No view" for clarity
+        ],
+        "nullable": True  # Allow flexibility for unknown cases
+    },
+
+    # Ownership and amenities
+    "ownership": {
+        "description": "Type of property ownership",
+        "options": ["Freehold", "Leasehold"]
+    },
+    "possession": {
+        "description": "Possession status of the property",
+        "options": [
+            "Ready to Move",
+            "Date of Possession",
+            "Under Construction",
+            "Possession not specified"  # Include "Possession not specified" for flexibility
+        ]
+    },
+    "maintenance_charges": {
+        "description": "Monthly maintenance charges (if applicable)",
+        "value": {
+            "type": "float",
+            "nullable": True  # Allow for cases where charges are not applicable or unknown
+        },
+        "unit": {
+            "options": ["INR", "USD", "EUR", "Other"],
+            "nullable": True
+        }
+    },
+    "amenities": {
+        "description": "List of available amenities (e.g., swimming pool, gym, security)",
+        "type": "list",
+        "items": {
+            "type": "string"
+        },
+        "nullable": True  # Allow for cases where amenities list is unavailable
+    },
+
+    # Additional details for flexibility
+    "other_details": {
+        "description": "Additional details specific to the property",
+        "type": "string",
+        "nullable": True  # Allow for customization and non-mandatory information
+    },
+
+    # Ensure data validation and integrity
+    "validation": {
+        "type": {
+            "required": True
+        },
+        "configuration": {
+            "required": True
+        },
+        "area": {
+            "value": {
+                "type": "float",
+                "required": True,
+                "minimum": 0  # Enforce positive area values
+            },
+            "unit": {
+                "required": True
+            }
+        },
+        "bathrooms": {
+            "value": {
+                "type": "integer",
+                "required": True,
+                "minimum": 0  # Enforce non-negative bathroom count
+            }
+        }
+        # Add validation rules for other fields as needed
+    }
+}
+
+"""# Duplicate of property_configuration so not added above.
+property_layout: 1 room kitchen, 1 bedroom hall kitchen, 2 bedroom hall kitchen, 3 bedrooms hall kitchen, 4 bedroom hall kitchen, 5 bedroom hall kitchen, 6 bedroom hall kitchen
+"""
+
+# ... Property features of commercial properties like .
+    "commercial_property_features": {
+        "available_commercial_property_type": {  # Type of commercial property (e.g., Office Space, Retail Space, Warehouse, Industrial unit)
+            "options": ["Office", "Shop", "Warehouse", "Industrial Unit"]
+        },
+        "area": {  # Area of the property in square feet or sqaure meter
+            "value": "...",
+            "description": "Specify carpet or built-up area"
+        },
+        "bathrooms": {  # Number of bathrooms (may not be relevant for some types)
+            "value": "..."
+        },
+        "floor": {  # Floor number of the property (ground, 1, 2, 3 ect...)
+            "value": "..."
+        },
+        "total_floors": {  # Total number of floors in the building (may not be relevant for some types)
+            "value": "..."
+        },
+        "furnishing_status": {  # Furnishing status of the property (may not be relevant for some types))
+            "options": ["Unfurnished", "Partially Furnished", "Fully Furnished"]
+        },
+        "facing": {  # Direction the property faces
+            "options": ["East", "West", "North", "South"]
+        },
+        "view": {  # Type of view from the property (may not be relevant)
+            "options": ["Road Facing", "City", "Park", "Other"]
+        },
+        "ownership": {  # Type of property ownership
+            "options": ["Freehold", "Leasehold"]
+        },
+        "possession": {  # Possession status of the property
+            "options": ["Ready to Move", "Date of Possession"]
+        },
+        "frontage": {  # Width of the property's street-facing edge (optional)
+            "value": "...",
+            "description": "In feet or meters"
+        },
+        "footfall": {  # Estimated level of pedestrian traffic near the property (optional)
+            "options": ["High", "Moderate", "Low"]
+        },
+        "rent_potential": {  # Estimated monthly rent potential (optional)
+            "value": "...",
+            "description": "Specify currency"
+        },
+        "maintenance_charges": {  # Monthly maintenance charges (if applicable)
+            "value": "..."
+        }
+        "avaliable_property_price": { #...
+            "options": ["Sale Price","Rent","Deposit"]
+        },
+    }
+
+"property_price": {
+            "sale_price": "....",  # If property is for sale
+            "rent": "....",  # If property is for rent
+            "deposit": "....",  # Deposit (applicable to both sale and rent)
+            "currency": "INR"  # Optional field for currency
+            },
+
+"budget": {
+        "sale": {  # Budget for sale properties
+            "min_range": "...",  # Minimum acceptable price
+            "max_range": "...",  # Maximum acceptable price
+            "currency": "INR"  # Optional field for currency
+        },
+        "rental": {  # Budget for rental properties
+            "min_range": "...",  # Minimum acceptable monthly rent
+            "max_range": "...",  # Maximum acceptable monthly rent
+            "currency": "INR"  # Optional field for currency
+       }
+    }
+
+#...populate fields in "property_listing" using the following dictionary
+avaliable_residential_property_features = {
+
+    # Features/ keywords unique to residential properties
+    	 "avaliable_residential_configuration": {  # Internal layout of residential property based on number of rooms/bedrooms as per source data/ message
+            "options": ["1RK", "1BHK", "2BHK", "3BHK", "4BHK", "5BHK", "6BHK"]
+        },
+        "avaliable_area": {  # Area of the property in square feet
+            "value": "...", # As mentioned in the message/data
+            "unit": ["square feet", "square meter","guntha","acre","hectare"],
+            "description": "Specify carpet area, built-up area or land"
+        },
+        "bathrooms": {  # Number of bathrooms
+            "value": "..."
+        },
+        "additional_space": {
+            "type":"....." # If property has balcony, sundeck, private terrace etc.
+            "value": "...", # As mentioned in the message/data
+            "unit": ["square feet", "square meter"],
+            "description": "Specify carpet or built-up area"
+        },
+
+    # Building and location details as per given data/message
+    	"avaliable_residential_property_type": {  # Type of construction/ structure
+            "options": ["Building", "Bungalows/ Villas", "Penthouse", "Row house", "Cottages"]
+        },
+    	"project_name": { #Building/ society name or project name
+    	     "value": "..."
+        },
+        "location": { # Street name, Landmark, City/ District, State, Country
+            "value": "..."
+        },
+    	"floor": {  # Floor number of the property (ground, 1, 2, 3 etc...)
+            "value": "..."
+        },
+        "total_floors": {  # Total number of floors in the building, villa, bungalow
+            "value": "..."
+        },
+        "facing": {  # Direction the property faces
+            "options": ["East", "West", "North", "South", "Northeast", "Northwest", "Southeast", "Southwest"],
+        },
+        "view": {  # Type of view from the property (e.g. Pool Facing, Sea Facing, Park Facing, Road Facing, etc...)
+            "options": ["Garden facing", "Sea Facing", "Road Facing", "pool facing", "Other"]
+        },
+
+    # Ownership and investment potential
+      	"ownership": {  # Type of property ownership
+            "options": ["Freehold", "Leasehold"]
+        },
+        "possession": {  # Possession status of the property
+            "options": ["Ready to Move", "Date of Possession"]
+        },
+        "maintenance_charges": {  # Monthly maintenance charges
+            "value": "..."
+        },
+
+    # Residential property price
+        "avaliable_property_price": {
+    	      "sale_price": "....",  # If property is for sale
+            "rent": "....",  # If property is for rent
+            "deposit": "....",  # Deposit (applicable for rental only)
+            "currency": "INR"  # Optional field for currency
+        },
+
+    # Aminities along with property like
+        "available_amenities": {
+        "avaliable_parking": { #
+            "Type": ["Podium","Puzzel","Stacked", "Open Parking", "Stilt Parking"],
+            "unit": "...." # Total number of parking space avaliable in the premise mentioned in the source data
+        },
+        "list": "extract only amenities mentioned in the message/ data (e.g., parking, swimming pool, gym, security)",
+        "type": "list",
+        },
+
+    # Additional details for flexibility
+        "other_details": {
+        "description": "Additional details specific to the property mentioned in the message/data that is not covered above.",
+        },
+} #...in property_listing populate ONLY the fields wherein data is available.
+
+#...in case of commercial property populate fields in "property_listing" using the following dictionary
+avaliable_commercial_property_features = {
+
+    # Features/ key/ lable unique to commercial properties
+        "available_commercial_property_type": {  # Type of commercial property (e.g., Office Space, Retail Space, Warehouse, Industrial unit)
+            "options": ["Office", "Shop", "Warehouse", "Industrial Unit"]
+        },
+        "available_commercial_configuration": {
+            "description": " Internal layout of the commercial property as per source/message",
+            "options": [ # Dynamic list based on data availability
+            "Pillarless Space": ["Yes","None"],  # For large, undivided spaces
+            "Cabin": "....",  # Number of available, individual enclosed workspaces i.e. segmented spaces with partitions, in units
+            "Conference Room": "....",  # Number of available, conference room, in units.
+            "Workstations": "....",  # Number of available, dedicated workspaces for individuals, in units.
+            "Pantry": ["Yes","None"], # A room or closet used for storage and preparation of snacks, tea, coffe etc.
+        ]
+        },
+        "avaliable_area": {  # Area of the property in square feet
+            "value": "...", # As mentioned in the message/data
+            "unit": ["square feet", "square meter"],
+            "description": "Specify carpet or built-up area"
+        },
+        "bathrooms": {  # Number of attached bathrooms
+            "value": "..."
+        },
+        "additional_space": {
+            "type":"....", # Add if property has loft, mezzanine, otla etc.
+            "value": "...", # As mentioned in the message/data
+            "unit": ["square feet", "square meter"],
+            "description": "Specify carpet or built-up area"
+        },
+        "backdoor": { # to be used ONLY if property has a fire-exit/ backdoor
+            "option": ["Yes", "None"]
+        },
+
+    # Building and location details as per given data/message
+    	  "project_name": { #Building/ society name or project name
+    	     "value": "..."
+        },
+        "location": { # Street name, Landmark, City/ District, State, Country
+            "value": "..."
+        },
+    	  "floor": {  # Floor number of the property (ground, 1, 2, 3 etc...)
+            "value": "..."
+        },
+        "total_floors": {  # Total number of floors in the building, villa, bungalow
+            "value": "..."
+        },
+        "facing": {  # Direction the property faces
+            "options": ["East", "West", "North", "South", "Northeast", "Northwest", "Southeast", "Southwest"],
+        },
+        "view": {  # Type of view from the property (e.g., Road Facing etc... )
+            "value": "..."
+        },
+        "frontage": {  # Width of the property's street-facing edge (optional)
+            "value": "...",
+            "description": "In feet or meters"
+        },
+        "footfall": {  # Estimated level of pedestrian traffic near the property (optional)
+            "options": ["High", "Moderate", "Low"]
+        },
+
+    # Ownership and investment potential
+      	"ownership": {  # Type of property ownership
+            "options": ["Freehold", "Leasehold"]
+        },
+        "possession": {  # Possession status of the property
+            "options": ["Ready to Move", "Date of Possession"]
+        },
+        "maintenance_charges": {  # Monthly maintenance charges
+            "value": "..."
+        }
+        "rent_potential": {  # Estimated monthly rent potential (preleased property)
+            "value": "...",
+            "description": "Specify currency"
+            "establishment": "...." # Business/ brand/ bank name that is currently using the premise
+        },
+
+    # Residential property price
+        "avaliable_offer_price": {
+    	      "sale_price": "....",  # If property is for sale
+            "rent": "....",  # If property is for rent
+            "deposit": "....",  # Deposit (applicable for rental only)
+            "currency": "INR"  # Optional field for currency
+        },
+
+    # Aminities along with property like
+        "avaliable_parking": { #
+            "Type": ["Podium","Puzzel","Stacked", "Open Parking", "Stilt Parking"]
+            "value": "...." # Total number of parking space avaliable in the premise mentioned in the source data
+        },
+        "existing_water_source":{ # Select existing sources of water
+             "options": ["Municipality", "Gram Panchyat", "Borewell","other"],
+             "other": "....."  # list the other water source as per source data/ message
+        },
+        "available_amenities": {
+            "list": "extract only amenities mentioned in the message/ data (e.g., Security, Visitor parking etc, Clubhouse, Gym, etc..)",
+            "type": "list",
+        },
+
+    # Additional details for flexibility
+        "other_details": {
+        "description": "Additional details specific to the property mentioned in the message/data that is not covered above.",
+        },
+
+    } #...in property_listing populate ONLY the fields wherein data is available.
+
+#...in case of Open Plot/ Land populate fields in "property_listing" using the following dictionary
+avaliable_open_plot_land_features =  {
+    "description": "Details about the available land property",
+
+    # Ownership
+
+
+    # Location and identification
+    "location": {
+        "description": "Geographic location and identification details",
+        "village": "...",
+        "taluka": "...",
+        "district": "...",  # Optional, if different from taluka
+        "state": "...",  # Optional, if different from district
+        "land_area": {
+            "description": "Total area of the land",
+            "value": "...",
+            "unit": ["square meters", "acres"]
+        },
+
+        "demarcation": {
+            "description": "Whether the land boundaries are demarcated",
+            "options": ["Yes", "No"]
+        },
+        "distance_from_pune": "... km"  # Approximate distance from Pune city center
+    },
+
+    # Regulatory and development aspects
+    "regulatory_details": {
+        "description": "Regulatory and development related information",
+        "zone": {
+            "description": "Zoning classification of the land",
+            "type": "...",  # Use pre-defined options or allow free text
+            "details": "..."  # Additional details, e.g., FSI allowed
+        },
+        "title": {
+            "description": "Land title type",
+            "options": [
+                "Freehold",
+                "Leasehold",
+                "Khaisa",
+                "Watan",
+                "Shart Mortgage",
+                "Other",  # Allow capturing other types
+            ]
+        },
+        "encumbrances": {
+            "description": "Any existing encumbrances or disputes",
+            "value": "...",  # Textual description or list of types
+            "nullable": True  # Allow for cases where none exist
+        },
+        "plan_sanction": {
+            "description": "Details of any sanctioned development plan",
+            "authority": "...",  # Sanctioning authority (e.g., PMC, PCMC, TP, PMRDA)
+            "plan_type": "...",  # Type of plan (e.g., layout plan, development plan)
+            "plan_id": "...",  # Identifier for the plan (optional)
+            "nullable": True  # Allow for cases where no plan exists
+        }
+    },
+
+    # Physical characteristics and amenities
+      "physical_details": {
+        "description": "Physical characteristics and amenities available",
+        "shape": "...",  # Description of the plot shape (e.g., rectangular, triangular)
+        "topography": "...",  # Description of the land's terrain
+        "gt_line": {
+            "description": "Presence of high-tension power line on or near the land",
+            "options": ["Yes", "No"]
+        },
+        "utilities": {
+            "description": "Available utilities on the land",
+            "gas": "...",  # Options: Yes/No or details of provider
+            "cable": "...",  # Options: Yes/No or details of provider
+            "waterbody": {
+                "description": "Presence of any waterbody on or near the land",
+                "options": ["Yes", "No", "Details"]  # Specify if details are provided
+            }
+        },
+        "distance_from_road": "... meters",  # Distance from the nearest main road or river
+        "reservation": {
+            "description": "Any reservation on the land for public purposes",
+            "value": "...",  # Specify the type of reservation if any
+            "nullable": True  # Allow for cases where no reservation exists
+        }
+    },
+
+    # Additional details
+      "other_details": {
+        "description": "Other relevant information about the land",
+        "value": "...",  # Textual description or structured data
+        "nullable": True  # Allow for optional additional details
+    }
+},
+
+# Populate fields in "property_listing" using the following dictionary
+property_listing_dictionary: { # Populate fields ONLY when data is available from the source/message.
+
+    # Features unique to residential properties
+    	 "avaliable_residential_configuration": {  # Internal layout of residential property based on number of rooms/bedrooms as per source data/ message
+            "options": ["1RK", "1BHK", "2BHK", "3BHK", "4BHK", "5BHK", "6BHK"]
+        },
+        "additional_space": {
+            "type":"....." # If property has balcony, sundeck, private terrace etc.
+            "value": "...", # As mentioned in the message/data
+            "unit": ["square feet", "square meter"],
+            "description": "Specify carpet or built-up area"
+        },
+
+    # Features unique to commercial properties
+        "available_commercial_property_type": {  # Type of commercial property (e.g., Office Space, Retail Space, Warehouse, Industrial unit)
+            "options": ["Office", "Shop", "Warehouse", "Industrial Unit"]
+        },
+        "available_commercial_configuration": {
+            "description": " Internal layout of the commercial property as per source/message",
+            "options": [ # Dynamic list based on data availability
+            "Pillarless Space": ["Yes","No"],  # For large, undivided spaces
+            "Cabin": "....",  # Number of available, individual enclosed workspaces i.e. segmented spaces with partitions, in units
+            "Conference Room": "....",  # Number of available, conference room, in units.
+            "Workstations": "....",  # Number of available, dedicated workspaces for individuals, in units.
+            "Pantry": ["Yes","None"], # A room or closet used for storage and preparation of snacks, tea, coffe etc.
+        ]
+        },
+
+    # Features unique to Open Plot/ Land
+
+        "water_availability": {
+                "waterbody": { # List all waterbody within the property/ land boundaries as per source/ data / message / post.
+                            "type": ["Pond/Lake", "River", "Stream"],
+                            "Details": "...." # Textual description as per data source/message
+        },
+                "water_supply": { # List all sources of drinking/ usable water available as per source/ data / message / post.
+                            "type": ["Muncipality", "Grampanchyat", "Borewell", "Irrigation", "Well"], # Allow for multuple source types as per source data/ message.
+
+        }
+    },
+        "existing_land_terrain": {
+        "description": "...", # Description of land terrain as per source/ data / message / post.
+        "distribution": { # Proportional breakdown of terrain types",
+            "value": {
+                "flat": "...%",
+                "hilly": "...%",
+                "sloped": "...%",
+                "other": "...% (Details: ...)"  # Allow for specifying other types and details
+            },
+        }
+    },
+
+
+    # Common basic property details as per given data source/message
+        "avaliable_area": {  # Area of the property in square feet
+            "value": "...", # As mentioned in the message/data
+            "unit": ["square feet", "square meter", "guntha", "acre", "hectare"],
+            "description": "Specify carpet area, built-up area or land"
+        },
+        "bathrooms": {  # Number of bathrooms
+            "value": "..."
+        },
+
+    # Building and location details as per given data source/message
+    	"existing_property_structure": {  # Type of construction/ structure or Open Plot/ Land
+            "options": ["Multi-Storey Building", "Bungalows/ Villas", "Penthouse", "Row house", "Cottages","Open Plot/Land"]
+        },
+    	"project_name": { #Building/ society name or project name
+    	     "value": "..."
+        },
+      "location": {
+      "description": "Populate geographic location details of the property as per data source/message",
+      "address": {
+        "description": "Combined address information",
+        "value": "..."  # Example: "123 Main Street, Apartment 4, Mumbai, Maharashtra, India"
+    },
+      "components": {  # Whenever possible break down address for finer-grained search/filtering
+        "street": {
+            "description": "Street name",
+            "value": "..."
+        },
+        "landmark": {
+            "description": "Nearby landmark",
+            "value": "..."
+        },
+        "city": {
+            "description": "City name",
+            "value": "..."
+        },
+        "district": {  # Assuming this refers to an administrative district
+            "description": "District name",
+            "value": "..."
+        },
+        "taluka": {  # Assuming this refers to a sub-district level (applicable in some regions)
+            "description": "Taluka name",
+            "value": "..."
+        },
+        "village": {  # Include if applicable in your region
+            "description": "Village name",
+            "value": "..."
+        },
+        "state": {
+            "description": "State name",
+            "value": "..."
+        },
+        "country": {
+            "description": "Country name",
+            "value": "..."
+        }
+        "land_record_details": {  # Details as per goverment land records
+            "survey_no": "...",  # Unique identification number as per goverment records, includes C.T.S. no.
+            "gat_no": "...",  # Basically is survey subdivision, and term "gat" is specific to Maharashtra
+        },
+      },
+    },
+
+    	"floor": {  # Floor number of the property (ground, 1, 2, 3 etc...)
+            "value": "..."
+        },
+        "total_floors": {  # Total number of floors in the building, villa, bungalow
+            "value": "..."
+        },
+        "facing": {  # Direction the property faces
+            "options": ["East", "West", "North", "South", "Northeast", "Northwest", "Southeast", "Southwest"],
+        },
+        "view": {  # Type of view from the property (e.g. Pool Facing, Sea Facing, Park Facing, Road Facing, etc...)
+            "options": ["Garden facing", "Sea Facing", "Road Facing", "pool facing", "Other"]
+        },
+
+     # Property price as quoted in data source/ message
+        "avaliable_offer_price": {
+    	      "sale_price": "....",  # If property is for sale
+            "rent": "....",  # If property is for rent
+            "deposit": "....",  # Deposit (applicable for rental only)
+            "currency": "INR"  # Optional field for currency
+        },
+
+    # Access to the property/ open land/ plot as per data source/ message
+        "accessibility": { # Road access to the property/ Open land/ plot
+	      "road_access": {
+            "options": ["Main Road", "Private Road", "No Road access"],
+            "description": "....", # Textual description as per data source/message
+            },
+            "public_transport": { # Existing public transport close to the property/ Open land/ plot
+                "options": ["Bus Stop", "Railway Station", "Metro Station", "Airport"]
+                "description": "....", # Textual description as per data source/message
+            },
+            },
+
+
+    # Regulatory and development aspects
+        "regulatory_details": {
+        "description": "Regulatory and development related information",
+        "zoning": {
+        "description": "Existing zoning classification of the property as per data source/ message",
+        "options": [
+            "Agricultural",
+            "Industrial",
+            "Commercial",
+            "Residential",
+            "Green Zone",
+            "Other Reservation",  # Use this option for non-standard categorizations
+        ],
+        },
+        "other_reservation_details": {
+        "description": "Details of specific reservation types if applicable (e.g., School, Adivasi, RG-PG, Hospital, Forest/Mangrove)",
+            "value": "...",  # Textual description as per data source/message
+        },
+        "plan_sanction": {
+            "description": "Details of any sanctioned development plan",
+            "authority": "...",  # Sanctioning authority (e.g., PMC, PCMC, TP, PMRDA)
+            "plan_type": "...",  # Type of plan (e.g., layout plan, development plan)
+            "plan_id": "...",  # Identifier for the plan (optional)
+            "nullable": True  # Allow for cases where no plan exists
+        }
+        "encumbrances": {
+            "description": "Any existing encumbrances or disputes",
+            "value": "...",  # Textual description or list of types
+            "nullable": True  # Allow for cases where none exist
+        },
+    },
+
+
+        # Ownership, title and investment potential
+      	"ownership": {  # Type of property ownership
+            "options": ["Freehold", "Leasehold"],
+            "leasehold_type": ["MHADA", "Collector", "others"]
+        },
+        "possession": {  # Possession status of the property as per data source/message
+            "options": ["Ready to Move", "Date of Possession"]
+        },
+        "maintenance_charges": {  # Monthly maintenance charges
+            "value": "..."
+        }
+        "rent_potential": {  # Estimated monthly rent potential (preleased property)
+            "value": "...",
+            "description": "Specify currency"
+            "establishment": "...." # Business/ brand/ bank name that is currently using the premise
+        },
+        "encumbrances": {
+            "description": "Any existing encumbrances or disputes",
+            "value": "...",  # Textual description or list of types
+            "nullable": True  # Allow for cases where none exist
+        },
+
+} #...ONLY use keywords / lables from ""property_listing_dictionary" to populate fields in property listings. (Do not use anyother Schema)
+
+#schema option 1 for consideration for message_category
+    "message_category": {
+        "type": {  # Placeholder for listing, inquiry, or other types
+            "options": ["listing", "inquiry", ...]  # Define possible types
+        },
+        "details": {
+            "sale": {
+                "property_type": {
+                    "options": [
+                        "Flat/Apartments",
+                        "Bungalow/Villa",
+                        "Penthouse",
+                        "Commercial Office",
+                        "Shop",
+                        "Cottage",
+                        "Industrial Unit/Gala",
+                        "Open Plot/Land",
+                        "Others",
+                    ]
+                },
+            },
+            "rental": {
+                "property_type": {
+                    "options": [
+                        "Flat/Apartments",
+                        "Bungalow/Villa",
+                        "Penthouse",
+                        "Commercial Office",
+                        "Shop",
+                        "Cottage",
+                        "Industrial Unit/Gala",
+                        "Open Plot/Land",
+                        "Paying Guest",
+                        "Others",
+                    ]
+                },
+            "joint_venture": {  # Optional section for specific inquiry details
+                    "ratio": "...",
+                    "security_deposit": "...",
+                    "other_details": "..."
+                }
+            }
+        }
+    }
+
+#schema option 2 for consideration for message _category
+    "message_category": {
+        "type": "listing",  # Can define other types like inquiry, feedback
+        "details": {
+            "sale": {  # For sale properties,
+                "property_type": {
+                    "options": [
+                        "Flat/Apartments",
+                        "Bungalow/Villa",
+                        "Penthouse",
+                        "Commercial Office",
+                        "Shop",
+                        "Cottage",
+                        "Industrial Unit/Gala",
+                        "Open Plot/Land",
+                        "Others",
+                    ]
+                }
+            },
+            "rental": {  # For rental properties
+                "property_type": {
+                    "options": [
+                        "Flat/Apartments",
+                        "Bungalow/Villa",
+                        "Penthouse",
+                        "Commercial Office",
+                        "Shop",
+                        "Cottage",
+                        "Industrial Unit/Gala",
+                        "Open Plot/Land",
+                        "Paying Guest",
+                        "Others",
+                    ]
+                }
+            }
+        }
+    }
+        "joint_venture": {  # Optional section for specific inquiry details
+                    "Open Plot/Land": "...",
+                    "Shop": "...",
+                    "others": "..."
+                }
+
+    "message_category": {
+        "type": "inquiry",  # Indicates message type as inquiry
+        "details": {
+            "sale": {  # For inquiries about sale properties
+                "property_type": {
+                    "options": [
+                        "Flat/Apartments",
+                        "Bungalow",
+                        "Penthouse",
+                        "Commercial Office",
+                        "Shop",
+                        "Cottage",
+                        "Industrial Unit/Gala",
+                        "Open Plot/Land",
+                        "Others",
+                    ]
+                },
+                "additional_info": {  # Optional section for specific inquiry details
+                    "budget_range": "...",
+                    "preferred_location": "...",
+                    "amenity_preference": "..."
+                }
+            },
+            "rental": {  # For inquiries about rental properties
+                "property_type": {
+                    "options": [
+                        "Flat/Apartments",
+                        "Bungalow",
+                        "Penthouse",
+                        "Commercial Office",
+                        "Shop",
+                        "Cottage",
+                        "Industrial Unit/Gala",
+                        "Open Plot/Land",
+                        "Paying Guest",
+                        "Others",
+                    ]
+                },
+             }
+        }
+    }
+
+# defaultdict to auto populate data in above schema/template
+    "property_data": {
+        "intent": #...check if the person intrested to sell the property, or to lease/rent the property.
+            "options":["property_for_sale","property_for_rent"]
+        "property_use": {  # List if property is to be used specifically for residential, commercial or is open land that can be used for construction, plotting or agriculture
+            "options": ["residential", "commercial", "open plot/land", "paying guest"]  # Define specific use of property
+        },
+        ["property_data"]: {
+            "residential": {
+                "property_type": {
+                    "options": [
+                        "Flat/Apartments",
+                        "Bungalow/Villa",
+                        "Penthouse",
+                    ]
+                },
+            },
+            "commercial": {
+                "property_type": {
+                    "options": [
+                        "Commercial Office",
+                        "Shop",
+                        "Cottage",
+                        "Industrial Unit/Gala"
+                    ]
+                },
+            "open_plot/land": {
+                    "Agricultural": "...",
+                    "Non Agricultral": "...",
+                    "others": "..."
+                }
+            "paying_guest": {
+                    "Single": "...",
+                    "Sharing": "...",
+                    "others": "..."
+                }
+            }
+        }
+    }
+
+# custompldict to auto populate data in above schema/template
+    "property_data": {}
+
+# Check and identify if the person intrested to sell the property, or to lease/rent the property.
+    property_data["intent"] = ["property_for_sale","property_for_rent"]
+
+# Identify if property is a residential, commercial, paying guest or is open land that can be used for construction, plotting or agriculture
+    property_data["intent"]["property_for_sale","property_for_rent"]["property_use"]: ["residential", "commercial", "paying guest", "open plot/land"]
+
+        ["property_data"]: {
+            "residential": {
+                "property_type": {
+                    "options": [
+                        "Flat/Apartments",
+                        "Bungalow/Villa",
+                        "Penthouse",
+                    ]
+                },
+            },
+            "commercial": {
+                "property_type": {
+                    "options": [
+                        "Commercial Office",
+                        "Shop",
+                        "Cottage",
+                        "Industrial Unit/Gala"
+                    ]
+                },
+            "open_plot/land": {
+                    "Agricultural": "...",
+                    "Non Agricultral": "...",
+                    "others": "..."
+                }
+            "paying_guest": {
+                    "Single": "...",
+                    "Sharing": "...",
+                    "others": "..."
+                }
+            }
+        }
+    }
+
+# Use below mentioned lables/keys in customdict_pl_data to extract and auto populate data inside property listing.
+    "customdict_pl_data": {
+
+# Check and identify if the person is interested in selling the property or leasing/renting it
+    customdict_pl_data["intent"] = ["property_for_sale", "property_for_rent"]
+
+# Identify the property use (residential, commercial, etc.) for both sale and rent intents
+    "property_use": {
+    "property_for_sale": ["residential_property", "commercial_property", "open plot/land"],
+    "property_for_rent": ["residential_property", "commercial_property", "paying guest", "open plot/land"]
+  }
+    }
+
+# Identify type of property and configuration/ layout of the property
+    "residential_property": {
+    "property_type": {
+                    "options": [
+                        "Flat/Apartments",
+                        "Bungalow/Villa",
+                        "Penthouse",
+                        "Row house",
+                        "Cottages", # use if property is in chawl, Jhopaada, slum
+                    ]
+                },
+    "property_configuration": {  # Internal layout of residential property based on number of rooms/bedrooms as per source data/ message
+            "options": [
+                "1RK", # 1 Room Kitchen
+                "1BHK", # 1 Bedroom Hall Kitchen
+                "2BHK", # 2 Bedroom Hall Kitchen
+                "3BHK", # 3 Bedroom Hall Kitchen
+                "4BHK", # 4 Bedroom Hall Kitchen
+                "5BHK", # 5 Bedroom Hall Kitchen
+                "6BHK"  # 6 Bedroom Hall Kitchen
+                ]
+        },
+    },
+    "commercial": {
+                "property_type": {
+                    "options": [
+                        "Commercial Office",
+                        "Shop",
+                        "Cottage",
+                        "Industrial Unit/Gala"
+                    ]
+                },
+                "property_configuration": { # Internal layout of the commercial property as per source/ message/ data
+                        "Pillarless Space": ["Yes","No"], # For large, undivided spaces mention "Yes", if pillars mention "No", and skip if no data.
+                        "cabin": {
+                                "count": int,  # Number of cabins within the commercial property
+                                "capacity": int  # Optional capacity information within the commercial property
+    },
+                        "conference_room": {
+                                "count": int,
+                                "capacity": int  # Optional capacity information
+    },
+                        "Workstations": int,  # Number of workstations within the commercial property
+                        "pantry": ["Avaliable","None"]
+                        "back_door": int, # If property has multiple entry/exists, like backdoor, fireexit etc.
+
+        },
+
+    },
+    "open_plot/land": {
+                "property_type": [
+                        "Agricultural": "...",
+                        "Non Agricultural": "...",
+                        "others": "..."
+    ]
+                "water_availability": {
+                        "waterbody": { # List all waterbody within the property/ land boundaries as per source/ data / message / post.
+                            "type": ["Pond/Lake", "River", "Stream"],
+                            "Details": "...." # Textual description as per data source/message
+        },
+                "water_supply": { # List all sources of drinking/ usable water available as per source/ data / message / post.
+                            "type": ["Muncipality", "Grampanchyat", "Borewell", "Irrigation", "Well"], # Allow for multuple source types as per source data/ message.
+
+        }
+    },
+                "existing_land_terrain": {
+                        "detail": "...", # Description of land terrain as per source/ data / message / post.
+                        "distribution": { # Proportional breakdown of terrain types",
+                             "value": {
+                                    "flat": "...%",
+                                    "hilly": "...%",
+                                    "sloped": "...%",
+                                    "other": "...% (Details: ...)"  # Allow for specifying other types and details
+            },
+        }
+    },
+  },
+    "paying_guest": {
+    "property_type": [
+      "Single occupancy",
+      "Sharing"
+    ]
+  }
+
+# Area of the property details as per given data source/ message
+        "avaliable_area": {
+            "area_title": ["carpet area", "builtup area","other"]
+            "value": int,
+            "unit": ["square feet", "square meter", "guntha", "acre", "hectare"], # For open plot/ land use guntha, acre, hectare whereas for residential or commercial properties use carpert area or built-up area."
+        },
+
+        "additional_space": {
+            "type":"....." # For residential property check for balcony, sundeck, private terrace etc, and for commercial property check for loft, mezzanine, otla etc.
+            "value": int, # As mentioned in the message/data
+            "unit": ["square feet", "square meter"],
+            "description": "Specify carpet or built-up area"
+        },
+
+# Use below mentioned lables/keys in customdict_pl_data to extract and auto populate data inside property listing.
+    "customdict_pl_data": {
+
+# Check and identify if the person is interested in selling the property or leasing/renting it
+    customdict_pl_data["intent"] = ["property_for_sale", "property_for_rent"]
+
+# Identify the property use (residential, commercial, etc.) for both sale and rent intents
+    "property_use": {
+    "property_for_sale": ["residential_property", "commercial_property", "open plot/land"],
+    "property_for_rent": ["residential_property", "commercial_property", "paying guest", "open plot/land"]
+  }
+    }
+
+# Identify type of property and configuration/ layout of the property
+    "residential_property": {
+    "residential_property_type": {
+                    "options": [
+                        "Flat/Apartments",
+                        "Bungalow/Villa",
+                        "Penthouse",
+                        "Row house",
+                        "Cottages", # use if property is in chawl, Jhopaada, slum
+                    ]
+                },
+    "residential_property_configuration": {  # Internal layout of residential property based on number of rooms/bedrooms as per source data/ message
+            "options": [
+                "1RK", # 1 Room Kitchen
+                "1BHK", # 1 Bedroom Hall Kitchen
+                "2BHK", # 2 Bedroom Hall Kitchen
+                "3BHK", # 3 Bedroom Hall Kitchen
+                "4BHK", # 4 Bedroom Hall Kitchen
+                "5BHK", # 5 Bedroom Hall Kitchen
+                "6BHK"  # 6 Bedroom Hall Kitchen
+                ]
+        },
+    },
+    "commercial": {
+                "commercial_property_type": {
+                    "options": [
+                        "Commercial Office",
+                        "Shop",
+                        "Cottage",
+                        "Industrial Unit/Gala"
+                    ]
+                },
+                "commercial_property_configuration": { # Internal layout of the commercial property as per source/ message/ data
+                        "Pillarless Space": ["Yes","No"], # For large, undivided spaces mention "Yes", if pillars mention "No", and skip if no data.
+                        "cabin": {
+                                "count": int,  # Number of cabins within the commercial property
+                                "capacity": int  # Optional capacity information within the commercial property
+    },
+                        "conference_room": {
+                                "count": int,
+                                "capacity": int  # Optional capacity information
+    },
+                        "Workstations": int,  # Number of workstations within the commercial property
+                        "pantry": ["Avaliable","None"]
+                        "back_door": int, # If property has multiple entry/exists, like backdoor, fireexit etc.
+
+        },
+
+    },
+    "open_plot/land": {
+                "op_property_type": [
+                        "Agricultural": "...",
+                        "Non Agricultural": "...",
+                        "others": "..."
+    ]
+                "water_availability": {
+                        "waterbody": { # List all waterbody within the property/ land boundaries as per source/ data / message / post.
+                            "type": ["Pond/Lake", "River", "Stream"],
+                            "Details": "...." # Textual description as per data source/message
+        },
+                "water_supply": { # List all sources of drinking/ usable water available as per source/ data / message / post.
+                            "type": ["Muncipality", "Grampanchyat", "Borewell", "Irrigation", "Well"], # Allow for multuple source types as per source data/ message.
+
+        }
+    },
+                "existing_land_terrain": {
+                        "detail": "...", # Description of land terrain as per source/ data / message / post.
+                        "distribution": { # Proportional breakdown of terrain types",
+                             "value": {
+                                    "flat": "...%",
+                                    "hilly": "...%",
+                                    "sloped": "...%",
+                                    "other": "...% (Details: ...)"  # Allow for specifying other types and details
+            },
+        }
+    },
+  },
+    "paying_guest": {
+    "property_type": [
+      "Single occupancy",
+      "Sharing"
+    ]
+  }
+
+# Area of the property details as per given data source/ message
+        "avaliable_area": {
+            "area_title": ["carpet area", "builtup area","other"]
+            "value": int,
+            "unit": ["square feet", "square meter", "guntha", "acre", "hectare"], # For open plot/ land use guntha, acre, hectare whereas for residential or commercial properties use carpert area or built-up area."
+        },
+
+        "additional_space": {
+            "type":"....." # For "residential_property" check for balcony, sundeck, private terrace etc, and for "commercial_property" check for loft, mezzanine, otla etc.
+            "value": int, # As mentioned in the message/data
+            "unit": ["square feet", "square meter"],
+            "description": "Specify carpet or built-up area"
+        },
+
+# Sale price or Rent of the property as per given data source/message.
+	"property_price": {
+            "sale_price": "....",  # If property is for sale
+            "rent": "....",  # If property is for rent
+            "deposit": "....",  # Deposit (applicable to both sale and rent)
+            "currency": "INR"  # Optional field for currency
+            },
+
+data = {
+  "property_data": {
+    "intent": "",  # Initialize with an empty string
+    "property_use": "",  # Initialize with an empty string
+    "property_details": {},  # Use a new dictionary for property details
+  }
+}
+
+# Assuming you have logic to determine intent (sale/rent) and property_use (residential/commercial etc.)
+intent = "property_for_sale"  # Replace with your logic
+property_use = "residential"  # Replace with your logic
+
+# Populate data based on intent and property_use
+data["property_data"]["intent"] = intent
+data["property_data"]["property_use"] = property_use
+
+# Assuming you have extracted details like property_type (Flat/Apartments etc.)
+property_type = "Flat/Apartments"  # Replace with your extracted value
+
+# Populate property details based on property_use
+if property_use == "residential":
+  data["property_data"]["property_details"] = {
+    "property_type": property_type
+  }
+elif property_use == "commercial":
+  # Add logic to populate details for commercial property based on extracted data
+  # ... (similar to open_plot/land and paying_guest logic below)
+  pass
+elif property_use == "open plot/land":
+  # Add logic to populate details for open plot/land based on extracted data
+  # ...
+  pass
+elif property_use == "paying_guest":
+  # Add logic to populate details for paying guest based on extracted data
+  # ...
+  pass
+
+# Now the "data" dictionary has property information based on extracted details
+
+
+# ... (Other functions remain unchanged)
+
+def extract_structured_data(message_text):
+    # ... (Existing code)
+
+    template = {
+        "message_no_XXX_structured_format": {
+            # ... (Other sections)
+            "structured_message_content": {
+                # ...if message body/ content consist of multiple property listings index them under property_listing_A, property_listing_B and so on.
+                "property_listing_A": {
+                    # Populate details from keyword matching:
+                    "property_type": extract_value_from_message(message_text, "message_category", "type", ["Flat/Apartments", "Bungalow/Villa", "Commercial Office", ...]),
+                    "residential_property_features": extract_values_from_message(message_text, "residential_property_features", None, ["balcony", "parking", ...]),
+                    "commercial_property_features": extract_values_from_message(message_text, "commercial_property_features", None, ["lift", "security", ...]),
+                    "area": extract_value_from_message(message_text, None, "area", ["sqft", "sq m"]),
+                    "price": extract_value_from_message(message_text, "price", None, ["rent", "sale"]),
+                    # ... Add other fields as needed
+                },
+                "property_listing_B": {
+                    # ... (Similar structure for additional listings)
+                },
+                # ...if message body/ content consist of multiple real estate inquiries index them under real_estate_inquiry_A, real_estate_inquiry_B and so on.
+                "real_estate_inquiry_A": {
+                    # Populate details from keyword matching:
+                    "inquiry_type": extract_value_from_message(message_text, "message_category", "type", ["rental", "purchase"]),
+                    "preferred_location": extract_value_from_message(message_text, None, "location", ["area", "locality"]),
+                    "budget": extract_value_from_message(message_text, "budget", None, ["rent", "sale"]),
+                    # ... Add other fields for inquiries
+                },
+                "real_estate_inquiry_B": {
+                    # ... (Similar structure for additional inquiries)
+                }
+            }
+        }
+    }
+
+    # ... (Rest of the code remains unchanged)
+
+def extract_value_from_message(message_text, section, keyword, options):
+    # Implement logic to extract the value based on section, keyword, and options
+    # (e.g., regular expressions, OpenAI, keyword matching)
+    pass
+
+def extract_values_from_message(message_text, section, keyword, options):
+    # Implement logic to extract multiple values based on section, keyword, and options
+    # (e.g., list or set comprehension)
+    pass
+
+
+
+# ... (Other functions remain unchanged)
+
+def extract_structured_data(message_text):
+    # ... (Existing code)
+
+    template = {
+        "message_no_XXX_structured_format": {
+            "basic_message_info": {
+                # ... (Fields for basic message information)
+            },
+            "contact_info": {
+                # ... (Fields for contact information)
+            },
+
+message_text="""07/09/2023, 10:27 - +91 81694 74646: FLAT FOR SALE
+
+4 BHK Raheja Vihar
+Raheja Vista
+beautiful furnish flat Carpet - 1516
+Asking price - 5.25 cr negotiable
+
+Ronak lifestyle Pvt Ltd
+Sunil Gare - 8169474646
+07/09/2023, 10:32 - +91 98338 01940: *DIRECT RENTAL PREMIUM SPACIOUS 4BHK WITH SERVANT*
+3200 CARPET WITH ACS  AND KITCHEN CABINETS
+*HUGE BALCONY*
+➖➖➖➖➖➖➖➖➖
+▪ *RAISKARAN PARTHENON* ▪️
+4 BUNGALOWS
+🔸 *30L DEP / 5L RENT*🔸
+Negotiable
+➖➖➖➖➖➖➖➖➖
+*MULTIPLE OPTIONS*
+HIGH CLASS AMENITIES LIKE SWIMMING POOL, GYM, CLUB HOUSE, KIDS PLAY AREA, ETC
+*With car park*
+*CLIENT PROFILE REQUIRED*
+Call for inspection
+*Mayank 9833801940*
+07/09/2023, 10:32 - +91 98338 01940: *DIRECT RENTAL PREMIUM SPACIOUS 4BHK WITH WITH BALCONY*
+2850 CARPET WITH ACS, WARDROBES & KITCHEN CABINETS
+*NEWLY DONE UP*
+➖➖➖➖➖➖➖➖➖
+▪ *BAY VIEW* ▪️
+JUHU VERSOVA LINK RD
+🔸 *30L DEP / 5L RENT*🔸
+➖➖➖➖➖➖➖➖➖
+*MULTIPLE OPTIONS*
+HIGH CLASS AMENITIES LIKE SWIMMING POOL, GYM, CLUB HOUSE, KIDS PLAY AREA, ETC
+*With car park*
+*CLIENT PROFILE REQUIRED*
+Call for inspection
+*Mayank 9833801940*
+07/09/2023, 10:32 - +91 98338 01940: *DIRECT RENTAL 3BHK*
+SEMI FURNISHED
+*NEWLY DONE UP FLAT*
+➖➖➖➖➖➖➖➖➖
+▪ *NATASHA TOWER* ▪️
+JUHU VERSOVA LINK RD
+
+🔸 *5L Deposit/ 1.5L rent*🔸
+➖➖➖➖➖➖➖➖➖
+*With 1 car park*
+Call for inspection
+*Mayank 9833801940*
+"""
+
+
+
+def extract_structured_listing_data(message_text):
+    """Extracts structured listing data using OpenAI for potential structured formats."""
+    # ... (Existing code for OpenAI-based structured listing extraction)
+
+def extract_template_data(message_text, template):
+    """Extracts structured data from a real estate message using OpenAI and a provided template."""
+    prompt = f"""
+    Fill in the following template with information extracted from the given real estate message:
+
+    {message_text}
+
+    {template}
+    """
+
+    response = openai.Completion.create(
+        engine="text-davinci-003",
+        prompt=prompt,
+        max_tokens=3000,  # Adjust as needed for longer messages and templates
+        n=1,
+        stop=None,
+        temperature=0.1,
+    )
+
+    # Parse OpenAI's response to extract the filled template
+    filled_template = {}
+    for line in response.choices[0].text.splitlines():
+        key, value = line.strip().split(":", 1)
+        filled_template[key.strip()] = value.strip()
+
+    # Extract data from specific template sections based on their keys
+    structured_data = {}
+    # ... (Implement logic to extract data from relevant sections of filled_template)
+
+    return structured_data
+
+def extract_structured_data(message_text):
+    """Extracts structured data from a real estate WhatsApp message using OpenAI and a specified approach."""
+    # 1. Try extracting structured data using OpenAI for potential structured listings
+    structured_data = extract_structured_listing_data(message_text)
+
+    if structured_data:
+        return structured_data
+
+    # 2. Otherwise, use the provided template
+    template = {
+        "message_no_XXX_structured_format": {
+            "basic_message_info":"basic_message_info": {
+                "id": {  # Unique identifier for the message
+                    "description": "A UUID or other unique string for tracking and reference"
+                },
+                "date": {  # Date the message was received
+                    "description": "Date in YYYY-MM-DD format"
+                },
+                "time": {  # Time the message was received
+                    "description": "Time in HH:MM format"
+                },
+                "source_number": {  # Phone number or contact information of the sender
+                    "description": "Phone number or other contact details for the sender"
+                },
+                "file/chat_name": {  # Name of the file or chat conversation
+                    "description": "Name of the file (e.g., text file, image) or chat name"
+                }
+            },
+            "contact_info": "contact_info": {
+                "contact_name": {
+                    "description": "Full name of the primary contact person (extracted from text message or manually added)"
+                },
+                "contact_number": {
+                    "description": "Phone number of the primary contact person (extracted from text message or manually added)"
+                },
+                "agency_name": {
+                    "description": "Name of the real estate agency representing the property/inquiry (extracted from text message or manually added)"
+                }
+            },
+            "structured_message_content": {
+                # ...if message body/ content consist of multiple property listings index them under property_listing_A, property_listing_B and so on.
+                "property_listing_A": {
+                    # ... (Fields for property listing A)
+                },
+                "property_listing_B": {
+                    # ... (Fields for property listing B)
+                },
+                # ...if message body/ content consist of multiple real estate inquiries index them under real_estate_inquiry_A, real_estate_inquiry_B and so on.
+                "real_estate_inquiry_A": {
+                    # ... (Fields for real estate inquiry A)
+                },
+                "real_estate_inquiry_B": {
+                    # ... (Fields for real estate inquiry B)
+            }
+        }
+    }
+}
+    return extract_template_data(message_text, template)
+
+# Example usage:
+message_text = "This is a sample real estate message..."  # Replace with actual message text
+structured_data = extract_structured_data(message_text)
+
+if structured_data:
+    print(f"Extracted structured data: {structured_data}")
+else:
+    print("Failed to extract structured data.")
+
+import openai
+
+openai.api_key = "YOUR_OPENAI_API_KEY"  # Replace with your actual API key
+
+def extract_structured_listing_data(message_text):
+    """Extracts structured listing data using OpenAI for potential structured formats."""
+    # ... (Existing code for OpenAI-based structured listing extraction)
+
+def extract_template_data(message_text, template):
+    """Extracts structured data from a real estate message using OpenAI and a provided template."""
+    prompt = f"""
+    Fill in the following template with information extracted from the given real estate message:
+
+    {message_text}
+
+    {template}
+    """
+
+    response = openai.Completion.create(
+        engine="text-davinci-003",
+        prompt=prompt,
+        max_tokens=3000,  # Adjust as needed for longer messages and templates
+        n=1,
+        stop=None,
+        temperature=0.1,
+    )
+
+    # Parse OpenAI's response to extract the filled template
+    filled_template = {}
+    for line in response.choices[0].text.splitlines():
+        key, value = line.strip().split(":", 1)
+        filled_template[key.strip()] = value.strip()
+
+    # Extract data from specific template sections based on their keys
+    structured_data = {}
+    # ... (Implement logic to extract data from relevant sections of filled_template)
+
+    return structured_data
+
+def extract_structured_data(message_text):
+    """Extracts structured data from a real estate WhatsApp message using OpenAI and a specified approach."""
+    # 1. Try extracting structured data using OpenAI for potential structured listings
+    structured_data = extract_structured_listing_data(message_text)
+
+    if structured_data:
+        return structured_data
+
+    # 2. Otherwise, use the provided template
+    template = {
+        "message_no_XXX_structured_format": {
+            "basic_message_info":"basic_message_info": {
+                "id": {  # Unique identifier for the message
+                    "description": "A UUID or other unique string for tracking and reference"
+                },
+                "date": {  # Date the message was received
+                    "description": "Date in YYYY-MM-DD format"
+                },
+                "time": {  # Time the message was received
+                    "description": "Time in HH:MM format"
+                },
+                "source_number": {  # Phone number or contact information of the sender
+                    "description": "Phone number or other contact details for the sender"
+                },
+                "file/chat_name": {  # Name of the file or chat conversation
+                    "description": "Name of the file (e.g., text file, image) or chat name"
+                }
+            },
+            "contact_info": "contact_info": {
+                "contact_name": {
+                    "description": "Full name of the primary contact person (extracted from text message or manually added)"
+                },
+                "contact_number": {
+                    "description": "Phone number of the primary contact person (extracted from text message or manually added)"
+                },
+                "agency_name": {
+                    "description": "Name of the real estate agency representing the property/inquiry (extracted from text message or manually added)"
+                }
+            },
+            "structured_message_content": {
+                # ... (Populate property_listing_A, property_listing_B, etc. based on message_category)
+                "property_listing_A": {
+                    # ... (Populate fields using keywords from {avaliable_residential_property_features}, {avaliable_commercial_property_features})
+                },
+                # ... (Similarly for property_listing_B, etc.)
+                "real_estate_inquiry_A": {
+                    # ... (Populate fields using keywords from message_category, etc.)
+                },
+                # ... (Similarly for real_estate_inquiry_B, etc.)
+            }
+        }
+    }
+
+    # Identify message type and populate corresponding section
+    message_category = extract_message_category(message_text)  # Implement this function
+    if message_category == "property_listing":
+        populate_property_listing(message_text, template["structured_message_content"]["property_listing_A"])
+    elif message_category == "real_estate_inquiry":
+        populate_real_estate_inquiry(message_text, template["structured_message_content"]["real_estate_inquiry_A"])
+    else:
+        # Handle other message types or invalid category
+        pass
+
+    # ... (Rest of the code remains unchanged)
+
+def extract_message_category(message_text):
+    # Implement logic to identify message category (e.g., keywords, patterns)
+    # Return "property_listing", "real_estate_inquiry", or other relevant category
+
+def populate_property_listing(message_text, listing_section):
+    # Extract keywords/labels from message_category, residential_property_features, etc.
+    # Use these keywords to identify and populate corresponding fields in listing_section
+    # (e.g., if "rent" keyword found, populate "price" field)
+
+def populate_real_estate_inquiry(message_text, inquiry_section):
+    # Similar logic as above for real estate inquiries
+    # Use keywords/labels to populate relevant fields in inquiry_section
+
+# ... (Implement extract_message_category, populate_property_listing, and populate_real_estate_inquiry functions)
+
+template=""""message_no_XXX_structured_format": {
+            "basic_message_info":"basic_message_info": {
+                "id": {  # Unique identifier for the message
+                    "description": "A UUID or other unique string for tracking and reference"
+                },
+                "date": {  # Date the message was received
+                    "description": "Date in YYYY-MM-DD format"
+                },
+                "time": {  # Time the message was received
+                    "description": "Time in HH:MM format"
+                },
+                "source_number": {  # Phone number or contact information of the sender
+                    "description": "Phone number or other contact details for the sender"
+                },
+                "file/chat_name": {  # Name of the file or chat conversation
+                    "description": "Name of the file (e.g., text file, image) or chat name"
+                }
+            },
+            "contact_info": "contact_info": {
+                "contact_name": {
+                    "description": "Full name of the primary contact person (extracted from text message or manually added)"
+                },
+                "contact_number": {
+                    "description": "Phone number of the primary contact person (extracted from text message or manually added)"
+                },
+                "agency_name": {
+                    "description": "Name of the real estate agency representing the property/inquiry (extracted from text message or manually added)"
+                }
+            },
+            "structured_message_content": {
+                # ... (Populate property_listing_A, property_listing_B, etc. based on message_category)
+                "property_listing_A": {
+                    # ... (Populate fields using keywords from {avaliable_residential_property_features}, {avaliable_commercial_property_features})
+                },
+                # ... (Similarly for property_listing_B, etc.)
+                "real_estate_inquiry_A": {
+                    # ... (Populate fields using keywords from message_category, etc.)
+                },
+                # ... (Similarly for real_estate_inquiry_B, etc.)
+            }
+        }
+    }"""
+
+
+def extract_structured_listing_data(message_text):
+    """Extracts structured listing data using OpenAI for potential structured formats."""
+    # ... (Existing code for OpenAI-based structured listing extraction)
+
+def extract_template_data(message_text, template):
+    """Extracts structured data from a real estate message using OpenAI and a provided template."""
+    prompt = f"""
+    Fill in the following template with information extracted from the given real estate message:
+
+    {message_text}
+
+    {template}"""
+
+    response = openai.chat.completion.create(
+        engine="gpt-3.5-turbo",
+        prompt=prompt,
+        max_tokens=3000,  # Adjust as needed for longer messages and templates
+        n=1,
+        stop=None,
+        temperature=0.1,
+    )
+
+    print(response)
+
+extract_template_data(message_text,template)
