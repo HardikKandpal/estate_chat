@@ -1,0 +1,198 @@
+REMOVE TABLE messages3;
+
+DEFINE TABLE messages3;
+
+-- Basic Message Info
+DEFINE FIELD basic_message_info ON messages3 TYPE object;
+DEFINE FIELD basic_message_info.uid ON messages3 TYPE string;
+DEFINE FIELD basic_message_info.date ON messages3 TYPE string;
+DEFINE FIELD basic_message_info.time ON messages3 TYPE string;
+DEFINE FIELD basic_message_info.source_number ON messages3 TYPE string;
+DEFINE FIELD basic_message_info.file_chat_name ON messages3 TYPE string;
+
+-- Contact Info
+DEFINE FIELD contact_info ON messages3 TYPE object;
+DEFINE FIELD contact_info.contact_name ON messages3 TYPE option<string>;
+DEFINE FIELD contact_info.contact_number ON messages3 TYPE option<string>;
+DEFINE FIELD contact_info.agency_name ON messages3 TYPE option<string>;
+
+-- Message Content
+DEFINE FIELD message_content ON messages3 TYPE object;
+
+-- Area
+DEFINE FIELD message_content.area ON messages3 TYPE object DEFAULT {};
+DEFINE FIELD message_content.area.value ON messages3 TYPE option<string>;
+DEFINE FIELD message_content.area.unit ON messages3 TYPE option<string>;
+DEFINE FIELD message_content.area.description ON messages3 TYPE option<string>;
+
+-- Available Offer Price
+DEFINE FIELD message_content.available_offer_price ON messages3 TYPE object DEFAULT {};
+DEFINE FIELD message_content.available_offer_price.sale_price ON messages3 TYPE option<string>;
+DEFINE FIELD message_content.available_offer_price.rent ON messages3 TYPE option<string>;
+DEFINE FIELD message_content.available_offer_price.deposit ON messages3 TYPE string DEFAULT 'NULL';
+DEFINE FIELD message_content.available_offer_price.currency ON messages3 TYPE string DEFAULT 'INR';
+
+-- Residential Property
+DEFINE FIELD message_content.residential_property ON messages3 TYPE option<object> DEFAULT {};
+DEFINE FIELD message_content.residential_property.type ON messages3 TYPE option<string>;
+DEFINE FIELD message_content.residential_property.configuration ON messages3 TYPE option<string>;
+DEFINE FIELD message_content.residential_property.bathrooms ON messages3 TYPE option<string>;
+DEFINE FIELD message_content.residential_property.floor ON messages3 TYPE option<string>;
+DEFINE FIELD message_content.residential_property.total_floors ON messages3 TYPE option<string>;
+DEFINE FIELD message_content.residential_property.furnishing_status ON messages3 TYPE option<string>;
+DEFINE FIELD message_content.residential_property.facing ON messages3 TYPE option<string>;
+DEFINE FIELD message_content.residential_property.view ON messages3 TYPE option<string>;
+DEFINE FIELD message_content.residential_property.intent ON messages3 TYPE option<array<string>> DEFAULT [];
+DEFINE FIELD message_content.residential_property.ownership ON messages3 TYPE option<array<string>> DEFAULT [];
+DEFINE FIELD message_content.residential_property.possession ON messages3 TYPE option<array<string>> DEFAULT [];
+DEFINE FIELD message_content.residential_property.maintenance_charges ON messages3 TYPE option<object> DEFAULT {};
+DEFINE FIELD message_content.residential_property.maintenance_charges.value ON messages3 TYPE option<string>;
+DEFINE FIELD message_content.residential_property.amenities ON messages3 TYPE option<array<string>> DEFAULT [];
+DEFINE FIELD message_content.residential_property.other_details ON messages3 TYPE option<string>;
+
+-- Commercial Property
+DEFINE FIELD message_content.commercial_property ON messages3 TYPE option<object> DEFAULT {};
+DEFINE FIELD message_content.commercial_property.available_commercial_property_type ON messages3 TYPE option<string>;
+DEFINE FIELD message_content.commercial_property.bathrooms ON messages3 TYPE option<string>;
+DEFINE FIELD message_content.commercial_property.floor ON messages3 TYPE option<string>;
+DEFINE FIELD message_content.commercial_property.total_floors ON messages3 TYPE option<string>;
+DEFINE FIELD message_content.commercial_property.furnishing_status ON messages3 TYPE array<option<string>> DEFAULT [];
+DEFINE FIELD message_content.commercial_property.facing ON messages3 TYPE option<string>;
+DEFINE FIELD message_content.commercial_property.view ON messages3 TYPE option<string>;
+DEFINE FIELD message_content.commercial_property.intent ON messages3 TYPE option<array<string>> DEFAULT [];
+DEFINE FIELD message_content.commercial_property.ownership ON messages3 TYPE option<array<string>> DEFAULT [];
+DEFINE FIELD message_content.commercial_property.possession ON messages3 TYPE option<array<string>> DEFAULT [];
+DEFINE FIELD message_content.commercial_property.maintenance_charges ON messages3 TYPE option<string>;
+
+-- Open Plot Land
+DEFINE FIELD message_content.open_plot_land ON messages3 TYPE option<object> DEFAULT {};
+DEFINE FIELD message_content.open_plot_land.property_type ON messages3 TYPE option<array<string>> DEFAULT [];
+DEFINE FIELD message_content.open_plot_land.water_availability ON messages3 TYPE option<object> DEFAULT {};
+DEFINE FIELD message_content.open_plot_land.existing_land_terrain ON messages3 TYPE option<object> DEFAULT {};
+
+-- Land Details
+DEFINE FIELD message_content.land ON messages3 TYPE option<object> DEFAULT {};
+DEFINE FIELD message_content.land.land_type ON messages3 TYPE option<string>;
+DEFINE FIELD message_content.land.ownership ON messages3 TYPE option<string>;
+DEFINE FIELD message_content.land.land_use ON messages3 TYPE option<string>;
+DEFINE FIELD message_content.land.road_access ON messages3 TYPE option<string>;
+DEFINE FIELD message_content.land.boundaries ON messages3 TYPE option<string>;
+DEFINE FIELD message_content.land.possession ON messages3 TYPE option<string>;
+DEFINE FIELD message_content.land.legal_approval ON messages3 TYPE option<string>;
+
+-- Budget
+DEFINE FIELD message_content.budget ON messages3 TYPE option<object> DEFAULT {};
+DEFINE FIELD message_content.budget.sale ON messages3 TYPE option<object> DEFAULT {};
+DEFINE FIELD message_content.budget.sale.min_range ON messages3 TYPE option<string>;
+DEFINE FIELD message_content.budget.sale.max_range ON messages3 TYPE option<string>;
+DEFINE FIELD message_content.budget.sale.currency ON messages3 TYPE option<string> DEFAULT 'INR';
+DEFINE FIELD message_content.budget.rental ON messages3 TYPE option<object> DEFAULT {};
+DEFINE FIELD message_content.budget.rental.min_range ON messages3 TYPE option<string>;
+DEFINE FIELD message_content.budget.rental.max_range ON messages3 TYPE option<string>;
+DEFINE FIELD message_content.budget.rental.currency ON messages3 TYPE option<string> DEFAULT 'INR';
+
+-- Location
+DEFINE FIELD message_content.location ON messages3 TYPE option<object> DEFAULT {};
+DEFINE FIELD message_content.location.village ON messages3 TYPE option<string>;
+DEFINE FIELD message_content.location.taluka ON messages3 TYPE option<string>;
+DEFINE FIELD message_content.location.district ON messages3 TYPE option<string>;
+DEFINE FIELD message_content.location.state ON messages3 TYPE option<string>;
+DEFINE FIELD message_content.location.land_area ON messages3 TYPE option<object> DEFAULT {};
+DEFINE FIELD message_content.location.land_area.value ON messages3 TYPE option<string>;
+DEFINE FIELD message_content.location.land_area.unit ON messages3 TYPE option<array<string>> DEFAULT [];
+DEFINE FIELD message_content.location.demarcation ON messages3 TYPE option<object> DEFAULT {};
+DEFINE FIELD message_content.location.demarcation.options ON messages3 TYPE option<array<string>> DEFAULT [];
+DEFINE FIELD message_content.location.distance_from_pune ON messages3 TYPE option<string>;
+
+-- Regulatory Details
+DEFINE FIELD message_content.regulatory_details ON messages3 TYPE option<object> DEFAULT {};
+DEFINE FIELD message_content.regulatory_details.zone ON messages3 TYPE option<object> DEFAULT {};
+DEFINE FIELD message_content.regulatory_details.title ON messages3 TYPE option<object> DEFAULT {};
+DEFINE FIELD message_content.regulatory_details.encumbrances ON messages3 TYPE option<object> DEFAULT {};
+DEFINE FIELD message_content.regulatory_details.plan_sanction ON messages3 TYPE option<object> DEFAULT {};
+
+-- Physical Details
+DEFINE FIELD message_content.physical_details ON messages3 TYPE option<object> DEFAULT {};
+DEFINE FIELD message_content.physical_details.shape ON messages3 TYPE option<string>;
+DEFINE FIELD message_content.physical_details.topography ON messages3 TYPE option<string>;
+DEFINE FIELD message_content.physical_details.gt_line ON messages3 TYPE option<object> DEFAULT {};
+DEFINE FIELD message_content.physical_details.utilities ON messages3 TYPE option<object> DEFAULT {};
+DEFINE FIELD message_content.physical_details.distance_from_road ON messages3 TYPE option<string>;
+DEFINE FIELD message_content.physical_details.reservation ON messages3 TYPE option<object> DEFAULT {};
+
+-- Other Details
+DEFINE FIELD message_content.other_details ON messages3 TYPE option<object> DEFAULT {};
+DEFINE FIELD message_content.other_details.value ON messages3 TYPE option<string>;
+
+
+
+
+----------------------------------------------------------------------------------SAMPLE INSERT QUERY----------------------------------------------------------------------------------------------------------------
+
+INSERT INTO messages3 {
+    "basic_message_info": {
+        "uid": rand::uuid(),
+        "date": "07/09/2023",
+        "time": "10:21",
+        "source_number": "+91 81694 74646",
+        "file_chat_name": "WhatsApp Chat with Murugan dada group 🙏🏻.txt"
+    },
+    "contact_info": {
+        "contact_name": "Sunil Gare",
+        "contact_number": "8169474646",
+        "agency_name": "Ronak lifestyle Pvt Ltd"
+    },
+    "message_content": {
+        "area": {
+            "value": "480-560",
+            "unit": "sft",
+            "description": "Built-up area"
+        },
+        "available_offer_price": {
+            "sale_price": "NONE",  -- Handles empty values correctly
+            "rent": "30,000 - 40,000",
+            "currency": "INR"
+        },
+        "commercial_property": {
+            "available_commercial_property_type": "Office",
+            "furnishing_status": [
+                "Unfurnished", 
+                "Semi-finished", 
+                "Furnished"
+            ],
+            "location": {
+                "village": "Chandivali",
+                "district": "Mumbai",
+                "state": "Maharashtra"
+            }
+        },
+        "residential_property": {  -- ✅ Wrap multiple entries inside an object
+            "properties": [   -- ✅ Store as an array inside an object
+                {
+                    "type": "Flat",
+                    "configuration": "1 BHK",
+                    "location": {
+                        "village": "Harmony",
+                        "state": "Maharashtra"
+                    },
+                    "available_offer_price": {
+                        "sale_price": "1.10 Cr",
+                        "currency": "INR"
+                    }
+                },
+                {
+                    "type": "Flat",
+                    "configuration": "2 BHK",
+                    "location": {
+                        "village": "Orchid, Nahar",
+                        "state": "Maharashtra"
+                    },
+                    "available_offer_price": {
+                        "sale_price": "1.60 Cr",
+                        "currency": "INR"
+                    }
+                }
+            ]
+        }
+    }
+};
